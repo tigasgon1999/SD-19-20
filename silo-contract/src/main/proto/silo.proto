@@ -1,0 +1,152 @@
+//
+// Protocol buffers definition for Silo server
+//
+syntax = "proto3";
+package pt.tecnico.sauron.silo.grpc;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+/*=============================================================================
+ * Auxiliar definitions
+=============================================================================*/
+message Camera {
+  string name = 1;
+  Coordinates coordinates = 2;
+}
+
+message Coordinates {
+  float latitude = 1;
+  float longitude = 2;
+}
+
+enum ObjectType {
+  UNDEFINED = 0;
+  PERSON = 1;
+  CAR = 2;
+}
+
+message Observation {
+  ObjectType type = 1;
+  string identifier = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message CompleteObservation {
+  Observation observation = 1;
+  Camera cam = 2;
+}
+
+message Timestamp { repeated int32 timestamp = 1; }
+
+/*=============================================================================
+ * Requests and Responses
+=============================================================================*/
+
+// Ping request and response
+message PingRequest { string message = 1; }
+message PingResponse { string message = 1; }
+
+// Init request. Response is empty
+message InitRequest { CompleteObservation data = 1; }
+
+// CamJoin request. Response is empty
+message CamJoinRequest {
+  Camera cam = 1;
+  Timestamp timestamp = 2;
+}
+
+message CamJoinResponse {
+  int32 clientId = 1;
+  Timestamp timestamp = 2;
+}
+
+// CamInfo request and response
+message CamInfoRequest { string name = 1; }
+message CamInfoResponse {
+  Coordinates Coordinates = 1;
+  Timestamp timestamp = 2;
+}
+
+// Report request and response
+message ReportRequest {
+  string name = 1;
+  repeated Observation observations = 2;
+  Timestamp timestamp = 3;
+  int32 clientId = 4;
+}
+message ReportResponse { Timestamp timestamp = 1; }
+
+// Track request and response
+message TrackRequest {
+  ObjectType type = 1;
+  string identifier = 2;
+}
+message TrackResponse {
+  repeated CompleteObservation observation = 1;
+  Timestamp timestamp = 2;
+}
+
+// TrackMatch request and response
+message TrackMatchRequest {
+  ObjectType type = 1;
+  string identifier = 2;
+}
+message TrackMatchResponse {
+  repeated CompleteObservation observation = 1;
+  Timestamp timestamp = 2;
+}
+
+// Trace request and response
+message TraceRequest {
+  ObjectType type = 1;
+  string identifier = 2;
+}
+message TraceResponse {
+  repeated CompleteObservation observation = 1;
+  Timestamp timestamp = 2;
+}
+
+// Gossip data
+message ReportedObservation {
+  Camera camera = 1;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message ReportedObject {
+  ObjectType type = 1;
+  string id = 2;
+  repeated ReportedObservation observations = 3;
+}
+
+message ReportedObjects { repeated ReportedObject objects = 1; }
+
+message GossipUpdate {
+  oneof data {
+    ReportedObjects objects = 1;
+    Camera camera = 2;
+  }
+  int32 rid = 3;
+  int32 uid = 4;
+}
+
+message GossipRequest { Timestamp timestamp = 1; }
+
+message GossipResponse { repeated GossipUpdate updates = 1; }
+
+/*=============================================================================
+ * gRPC methods
+=============================================================================*/
+
+service Silo {
+  rpc ctrl_ping(PingRequest) returns (PingResponse);
+  rpc ctrl_clear(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc ctrl_init(InitRequest) returns (google.protobuf.Empty);
+  rpc cam_join(CamJoinRequest) returns (CamJoinResponse);
+  rpc cam_info(CamInfoRequest) returns (CamInfoResponse);
+  rpc report(ReportRequest) returns (ReportResponse);
+  rpc track(TrackRequest) returns (TrackResponse);
+  rpc trackMatch(TrackMatchRequest) returns (TrackMatchResponse);
+  rpc trace(TraceRequest) returns (TraceResponse);
+  rpc gossip(GossipRequest) returns (GossipResponse);
+}
